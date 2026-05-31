@@ -208,3 +208,6 @@ int main() {
     printf("The End...\n");
     return 0;
 }
+
+找一个痴情的人来告别单身。
+探讨5ti。
