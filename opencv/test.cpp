@@ -94,3 +94,121 @@ int main()
     return 0;
 }
 3trf4   3qkh5yty24T32LTF3lghgjq54ymwRG43KY4WMJM45K3QH.
+#include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <stddef.h>
+#include <unistd.h>
+
+#define BUFFER_SIZE 4
+
+// 定义全局变量
+int buffer[BUFFER_SIZE] = {-1,-1,-1,-1};
+int product_number = 0;
+
+sem_t empty;  // 同步信号量：记录空缓冲区数量
+sem_t full;   // 同步信号量：记录满缓冲区数量
+sem_t mutex;  // 互斥信号量：保证缓冲区互斥访问
+
+// 生产者线程
+void * producer() {
+    int product = rand() % 50;  // 生产随机数产品
+    int i = 0;
+
+    sleep(1);
+
+    // ========== 填空 1：empty P 操作 ==========
+    sem_wait(&empty);
+    // ========== 填空 2：mutex P 操作 ==========
+    sem_wait(&mutex);
+
+    // 临界区：生产并放入缓冲区
+    printf("produce NO.%d product,value is:%d\n", product_number + 1, product);
+    buffer[product_number] = product;
+    printf("now, buff have %d products, they are: ", product_number + 1);
+    for (i = 0; i < product_number + 1; i++) {
+        printf("%d   ", buffer[i]);
+    }
+    printf("\n\n");
+    product_number++;
+
+    sleep(1);
+
+    // ========== 填空 3：mutex V 操作 ==========
+    sem_post(&mutex);
+    // ========== 填空 4：full V 操作 ==========
+    sem_post(&full);
+
+    return NULL;
+}
+
+// 消费者线程
+void * consumer() {
+    int i = 0;
+
+    // ========== 填空 5：full P 操作 ==========
+    sem_wait(&full);
+    // ========== 填空 6：mutex P 操作 ==========
+    sem_wait(&mutex);
+
+    // 临界区：从缓冲区取出产品
+    printf("consume NO.1 product,value is:%d\n", buffer[0]);
+    printf("now, buff have %d products, they are: ", product_number - 1);
+    for (i = 0; i < product_number - 1; i++) {
+        buffer[i] = buffer[i + 1];
+        printf("%d   ", buffer[i]);
+    }
+    printf("\n\n");
+    buffer[product_number - 1] = -1;
+    product_number--;
+
+    sleep(2);
+
+    // ========== 填空 7：mutex V 操作 ==========
+    sem_post(&mutex);
+    // ========== 填空 8：empty V 操作 ==========
+    sem_post(&empty);
+
+    return NULL;
+}
+
+int main() {
+    pthread_t id_producer[10];
+    pthread_t id_consumer[10];
+    int ret = 0, i = 0;
+
+    // 初始化信号量
+    sem_init(&empty, 0, BUFFER_SIZE);
+    sem_init(&full, 0, 0);
+    sem_init(&mutex, 0, 1);
+
+    pthread_t tid = pthread_self();
+    printf("the main thread id is %lu \n", tid);
+
+    // 创建 10 个生产者 + 10 个消费者
+    for (i = 0; i < 10; i++) {
+        ret = pthread_create(&id_producer[i], NULL, producer, NULL);
+        printf("the thread id is %lu \n", id_producer[i]);
+        ret = pthread_create(&id_consumer[i], NULL, consumer, NULL);
+    }
+
+    // 等待所有线程结束
+    for (i = 0; i < 10; i++) {
+        pthread_join(id_producer[i], NULL);
+        printf("the thread id join is %lu \n", id_producer[i]);
+        pthread_join(id_consumer[i], NULL);
+    }
+
+    // 销毁信号量
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    sem_destroy(&mutex);
+
+    printf("The End...\n");
+    return 0;
+}
+
+找一个痴情的人来告别单身。
+探讨5ti。
